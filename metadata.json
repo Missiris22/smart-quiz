@@ -1,0 +1,5 @@
+{
+  "name": "SmartQuiz AI",
+  "description": "一个简约的苹果风格学习平台，管理员可通过AI将PDF生成试题，用户可进行练习和复习。",
+  "requestFramePermissions": []
+}
