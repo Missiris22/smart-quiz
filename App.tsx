@@ -59,11 +59,11 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] flex flex-col md:flex-row">
+    <div className="h-screen bg-[#F5F5F7] flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-white/80 backdrop-blur-md border-r border-gray-200 flex-shrink-0 sticky top-0 md:h-screen z-20">
-        <div className="p-6 flex flex-col h-full">
-          <div className="flex items-center space-x-3 mb-10">
+      <aside className="w-full md:w-64 bg-white/80 backdrop-blur-md border-r border-gray-200 flex-shrink-0 flex flex-col h-full overflow-y-auto z-20">
+        <div className="p-6 flex flex-col h-full min-h-0">
+          <div className="flex items-center space-x-3 mb-10 flex-shrink-0">
             <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center shadow-md">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -72,7 +72,7 @@ const App: React.FC = () => {
             <span className="text-xl font-bold tracking-tight text-gray-900">SmartQuiz AI</span>
           </div>
 
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 space-y-2 overflow-y-auto">
             <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
               菜单
             </div>
@@ -104,7 +104,7 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          <div className="mt-auto border-t border-gray-200 pt-6">
+          <div className="mt-auto border-t border-gray-200 pt-6 flex-shrink-0">
             <div className="flex items-center space-x-3 mb-4 px-3">
               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-md">
                 {role === UserRole.ADMIN ? 'Admin' : 'User'}
@@ -125,9 +125,10 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-        <header className="mb-8 flex justify-between items-center">
+      {/* Main Content Area: Fixed Layout */}
+      <main className="flex-1 flex flex-col h-full min-w-0">
+        {/* Fixed Header */}
+        <header className="flex-shrink-0 p-6 md:px-12 md:py-8 flex justify-between items-center bg-[#F5F5F7] z-10">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
               {currentView === 'admin' ? '后台管理' : '学习资料库'}
@@ -141,18 +142,21 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {currentView === 'admin' && role === UserRole.ADMIN ? (
-          <AdminPanel onNavigateToQuiz={handleNavigateToQuiz} />
-        ) : (
-          <QuizArea 
-            initialPdfId={targetPdfId} 
-            initialQuizId={targetQuizId}
-            onClearInitial={() => {
-                setTargetPdfId(null);
-                setTargetQuizId(null);
-            }} 
-          />
-        )}
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 md:px-12 pb-12 scroll-smooth">
+          {currentView === 'admin' && role === UserRole.ADMIN ? (
+            <AdminPanel onNavigateToQuiz={handleNavigateToQuiz} />
+          ) : (
+            <QuizArea 
+              initialPdfId={targetPdfId} 
+              initialQuizId={targetQuizId}
+              onClearInitial={() => {
+                  setTargetPdfId(null);
+                  setTargetQuizId(null);
+              }} 
+            />
+          )}
+        </div>
       </main>
     </div>
   );

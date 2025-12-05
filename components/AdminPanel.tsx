@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole, PDFDocument } from '../types';
-import { addUser, addDocument, addQuiz, getUsers, getDocuments } from '../services/store';
+import { addUser, addDocument, addQuiz, getUsers, getDocuments, getQuizzes } from '../services/store';
 import { generateQuizFromPDF } from '../services/geminiService';
 
 interface AdminPanelProps {
@@ -21,6 +21,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigateToQuiz }) => {
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [numQuestions, setNumQuestions] = useState(20); // Default to 20
+  const [currentQuizId, setCurrentQuizId] = useState<string | null>(null); // Track the newly created quiz ID
   
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +49,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigateToQuiz }) => {
     // Reset states
     setUploadSuccess(false);
     setUploadStatus('');
+    setCurrentQuizId(null);
 
     // 1. Validate File Type
     if (file.type !== 'application/pdf') {
@@ -99,6 +101,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigateToQuiz }) => {
           questions: questions
         });
 
+        setCurrentQuizId(quizId); // Store the quiz ID for the success button
         setUploadStatus('成功！文档已解析，试题生成完毕。');
         setUploadSuccess(true);
       } catch (error: any) {
@@ -129,6 +132,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigateToQuiz }) => {
   };
 
   const documents = getDocuments();
+  const quizzes = getQuizzes();
 
   return (
     <div className="w-full">
@@ -223,10 +227,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigateToQuiz }) => {
                   {uploadStatus}
                 </div>
                 
-                {uploadSuccess && (
+                {uploadSuccess && currentQuizId && (
                   <div className="mt-4 animate-fade-in-up">
                     <button 
-                      onClick={() => onNavigateToQuiz()}
+                      onClick={() => onNavigateToQuiz(undefined, currentQuizId)}
                       className="inline-flex items-center px-6 py-2.5 bg-green-600 text-white font-medium rounded-xl shadow-md hover:bg-green-700 hover:shadow-lg transition-all duration-200"
                     >
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -247,37 +251,50 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigateToQuiz }) => {
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">文件名</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">上传时间</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">状态</th>
                         <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">操作</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                      {documents.map((doc) => (
-                        <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            <div className="flex items-center">
-                              <svg className="w-4 h-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" /></svg>
-                              {doc.name}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(doc.uploadDate).toLocaleDateString('zh-CN')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                              onClick={() => onNavigateToQuiz(doc.id, undefined)}
-                              className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg transition-colors border border-blue-100"
-                            >
-                              预览PDF
-                            </button>
-                            <button
-                               onClick={() => onNavigateToQuiz(undefined, doc.associatedQuizId)}
-                               className="ml-3 text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-lg transition-colors border border-green-100"
-                            >
-                               开始刷题
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {documents.map((doc) => {
+                        const hasQuiz = quizzes.some(q => q.id === doc.associatedQuizId);
+                        return (
+                          <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              <div className="flex items-center">
+                                <svg className="w-4 h-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" /></svg>
+                                {doc.name}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(doc.uploadDate).toLocaleDateString('zh-CN')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {hasQuiz ? (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">已生成</span>
+                              ) : (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-medium">未生成/失败</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <button
+                                onClick={() => onNavigateToQuiz(doc.id, undefined)}
+                                className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg transition-colors border border-blue-100"
+                              >
+                                预览PDF
+                              </button>
+                              {hasQuiz && (
+                                <button
+                                  onClick={() => onNavigateToQuiz(undefined, doc.associatedQuizId)}
+                                  className="ml-3 text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-lg transition-colors border border-green-100"
+                                >
+                                  开始刷题
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
